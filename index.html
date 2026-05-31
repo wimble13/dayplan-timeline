@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>每日时间块消消乐</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #F7F6F3;
+  --line: #D4D0C8;
+  --card: #FFFFFF;
+  --active: #FFF8E7;
+  --gold: #F5A623;
+  --text: #2D2D2D;
+  --muted: #999;
+  --done-text: #BBB;
+}
+
+body {
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 16px 32px;
+}
+
+.header {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 4px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.coin-icon {
+  font-size: 18px;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+}
+
+.timeline {
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  padding-left: 76px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 60px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--line) 0px,
+    var(--line) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.block {
+  position: relative;
+  margin-bottom: 10px;
+  opacity: 1;
+  transform-origin: center;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.block.removing {
+  animation: popOut 0.35s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes popOut {
+  0%   { transform: scale(1) translateY(0); opacity: 1; }
+  30%  { transform: scale(1.08) translateY(-5px); }
+  100% { transform: scale(0.7) translateY(-40px); opacity: 0; }
+}
+
+.block.done {
+  display: none;
+}
+
+.block-inner {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+  position: relative;
+}
+
+.block-inner:active {
+  transform: scale(0.96);
+  background: var(--active);
+}
+
+.block-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: "SF Mono", "Menlo", monospace;
+  margin-bottom: 3px;
+}
+
+.block-label {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.block-node {
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--line);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.block-node::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background 0.2s;
+}
+
+.block.done .block-node::after {
+  background: #8BC48A;
+}
+
+.done-check {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.block-node.done .done-check { opacity: 1; }
+
+.float-coin {
+  position: fixed;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+  pointer-events: none;
+  animation: floatUp 0.9s ease-out forwards;
+  z-index: 100;
+}
+
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  20%  { opacity: 1; transform: translateY(-10px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
+}
+
+.all-done {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.all-done-emoji {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.reset-btn {
+  margin-top: 16px;
+  background: none;
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span>📅</span>
+    <span id="dateStr">今日</span>
+  </div>
+  <div class="header-right">
+    <span class="coin-icon">🪙</span>
+    <span id="coinCount">0</span>
+  </div>
+</div>
+
+<div class="progress-text" id="progressText">完成 0 / 0</div>
+
+<div class="timeline" id="timeline"></div>
+
+<div class="all-done" id="allDone" style="display:none">
+  <div class="all-done-emoji">🎉</div>
+  <div>今日全部完成！</div>
+  <button class="reset-btn" id="resetBtn">重置今日</button>
+</div>
+
+<script>
+// ── 每日时间表 ──
+const DEFAULT_SCHEDULE = [
+  { time: "06:00", label: "游泳" },
+  { time: "08:30", label: "聚焦工作" },
+  { time: "12:30", label: "钢琴" },
+  { time: "13:20", label: "午休" },
+  { time: "14:10", label: "聚焦工作" },
+  { time: "18:00", label: "晚饭、工作复盘" },
+  { time: "20:00", label: "AI 学习" },
+  { time: "21:30", label: "晚复盘" },
+];
+
+// ── Storage ──
+function todayKey() {
+  return `dayplan_${localStorage.getItem('dayplan_date') || todayStr()}`;
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getOrCreatePlan() {
+  const storedDate = localStorage.getItem('dayplan_date');
+  const today = todayStr();
+  if (storedDate !== today) {
+    localStorage.setItem('dayplan_date', today);
+    const plan = {
+      date: today,
+      blocks: DEFAULT_SCHEDULE.map((b, i) => ({
+        id: i,
+        time: b.time,
+        label: b.label,
+        done: false,
+        doneAt: null,
+      })),
+      coinCount: parseInt(localStorage.getItem('dayplan_coinCount') || '0'),
+    };
+    localStorage.setItem(todayKey(), JSON.stringify(plan));
+    return plan;
+  }
+  const raw = localStorage.getItem(todayKey());
+  return raw ? JSON.parse(raw) : createFreshPlan();
+}
+
+function createFreshPlan() {
+  const today = todayStr();
+  const plan = {
+    date: today,
+    blocks: DEFAULT_SCHEDULE.map((b, i) => ({
+      id: i, time: b.time, label: b.label, done: false, doneAt: null,
+    })),
+    coinCount: parseInt(localStorage.getItem('dayplan_coinCount') || '0'),
+  };
+  localStorage.setItem(todayKey(), JSON.stringify(plan));
+  return plan;
+}
+
+function savePlan(plan) {
+  localStorage.setItem(todayKey(), JSON.stringify(plan));
+  localStorage.setItem('dayplan_coinCount', String(plan.coinCount));
+}
+
+// ── Render ──
+function render() {
+  const plan = getOrCreatePlan();
+  document.getElementById('dateStr').textContent = plan.date;
+  document.getElementById('coinCount').textContent = plan.coinCount;
+
+  const done = plan.blocks.filter(b => b.done).length;
+  const total = plan.blocks.length;
+  document.getElementById('progressText').textContent = `完成 ${done} / ${total}`;
+
+  const tl = document.getElementById('timeline');
+  const allDoneEl = document.getElementById('allDone');
+  tl.innerHTML = '';
+
+  if (done === total) {
+    tl.style.display = 'none';
+    allDoneEl.style.display = 'block';
+    return;
+  }
+
+  tl.style.display = 'block';
+  allDoneEl.style.display = 'none';
+
+  plan.blocks.forEach((block, idx) => {
+    if (block.done) return;
+
+    const el = document.createElement('div');
+    el.className = 'block';
+    el.dataset.id = block.id;
+
+    el.innerHTML = `
+      <div class="block-node"></div>
+      <div class="block-inner">
+        <div class="block-time">${block.time}</div>
+        <div class="block-label">${block.label}</div>
+      </div>
+    `;
+
+    el.querySelector('.block-inner').addEventListener('click', () => {
+      handleDone(block, el);
+    });
+
+    tl.appendChild(el);
+  });
+}
+
+function handleDone(block, el) {
+  if (el.classList.contains('removing')) return;
+
+  const plan = getOrCreatePlan();
+  const found = plan.blocks.find(b => b.id === block.id);
+  if (!found || found.done) return;
+
+  found.done = true;
+  found.doneAt = new Date().toISOString();
+  plan.coinCount = (plan.coinCount || 0) + 1;
+  savePlan(plan);
+
+  // float coin
+  const rect = el.getBoundingClientRect();
+  showFloatCoin(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+  el.classList.add('removing');
+
+  setTimeout(() => {
+    render();
+  }, 350);
+}
+
+function showFloatCoin(x, y) {
+  const el = document.createElement('div');
+  el.className = 'float-coin';
+  el.textContent = '+1 🪙';
+  el.style.left = `${x - 20}px`;
+  el.style.top = `${y}px`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+// reset
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const today = todayStr();
+  const plan = createFreshPlan();
+  savePlan(plan);
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
