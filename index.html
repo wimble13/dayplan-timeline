@@ -15,7 +15,8 @@
   --gold: #F5A623;
   --text: #2D2D2D;
   --muted: #999;
-  --done-text: #BBB;
+  --done-bg: #F0F9F0;
+  --done-border: #B8D9B8;
 }
 
 body {
@@ -25,26 +26,52 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 16px 32px;
+  padding: 16px 16px 48px;
 }
 
+/* ── Header ── */
 .header {
   width: 100%;
   max-width: 420px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   padding: 0 4px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--text);
-  font-size: 15px;
+  font-size: 14px;
+}
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.nav-btn:active { background: var(--active); }
+
+.current-date {
+  font-size: 14px;
   font-weight: 600;
+  color: var(--text);
+  min-width: 90px;
+  text-align: center;
 }
 
 .header-right {
@@ -56,19 +83,48 @@ body {
   color: var(--gold);
 }
 
-.coin-icon {
-  font-size: 18px;
+.coin-icon { font-size: 18px; }
+
+/* ── Tab ── */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 420px;
 }
 
-.progress-text {
+.tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
   font-size: 13px;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
   color: var(--muted);
-  margin-bottom: 20px;
+  transition: all 0.15s;
+}
+
+.tab.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ── Progress ── */
+.progress-text {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
   text-align: center;
   max-width: 420px;
   width: 100%;
 }
 
+/* ── Timeline ── */
 .timeline {
   width: 100%;
   max-width: 420px;
@@ -92,12 +148,11 @@ body {
   );
 }
 
+/* ── Block ── */
 .block {
   position: relative;
   margin-bottom: 10px;
-  opacity: 1;
-  transform-origin: center;
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  transition: opacity 0.25s, transform 0.25s;
 }
 
 .block.removing {
@@ -112,35 +167,29 @@ body {
 }
 
 .block.done {
-  display: none;
-}
-
-.block-inner {
-  background: var(--card);
+  background: var(--done-bg);
+  border: 1.5px solid var(--done-border);
   border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.12s ease;
-  position: relative;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.65;
 }
 
-.block-inner:active {
-  transform: scale(0.96);
-  background: var(--active);
+.block.done .block-time-range {
+  color: #8BC48A;
+  text-decoration: line-through;
 }
 
-.block-time {
-  font-size: 11px;
-  color: var(--muted);
-  font-family: "SF Mono", "Menlo", monospace;
-  margin-bottom: 3px;
+.block.done .block-label {
+  color: #AAA;
 }
 
-.block-label {
-  font-size: 15px;
-  color: var(--text);
-  font-weight: 500;
+.done-badge {
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .block-node {
@@ -154,10 +203,11 @@ body {
   background: var(--card);
   border: 2px solid var(--line);
   box-shadow: 0 0 0 3px var(--bg);
+  z-index: 1;
+  transition: border-color 0.2s;
 }
 
-.block-node::after {
-  content: '';
+.block-node-inner {
   position: absolute;
   inset: 2px;
   border-radius: 50%;
@@ -165,25 +215,45 @@ body {
   transition: background 0.2s;
 }
 
-.block.done .block-node::after {
+.block.done .block-node-inner {
   background: #8BC48A;
 }
 
-.done-check {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 16px;
-  opacity: 0;
-  transition: opacity 0.2s;
+.block-node.done .block-node-inner {
+  background: #8BC48A;
 }
 
-.block-node.done .done-check { opacity: 1; }
+.block-inner {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 11px 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
 
+.block-inner:active {
+  transform: scale(0.96);
+  background: var(--active);
+}
+
+.block-time-range {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: "SF Mono", "Menlo", monospace;
+  margin-bottom: 2px;
+}
+
+.block-label {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ── Float Coin ── */
 .float-coin {
   position: fixed;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--gold);
   pointer-events: none;
@@ -197,20 +267,21 @@ body {
   100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
 }
 
+/* ── All Done ── */
 .all-done {
   text-align: center;
   padding: 40px 20px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .all-done-emoji {
-  font-size: 48px;
-  margin-bottom: 12px;
+  font-size: 44px;
+  margin-bottom: 10px;
 }
 
 .reset-btn {
-  margin-top: 16px;
+  margin-top: 14px;
   background: none;
   border: 1.5px solid var(--line);
   border-radius: 20px;
@@ -219,110 +290,241 @@ body {
   color: var(--muted);
   cursor: pointer;
 }
+
+/* ── History ── */
+.history-list {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.history-item:active {
+  background: var(--active);
+}
+
+.history-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.history-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.history-done-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8BC48A;
+  background: #F0F9F0;
+  border: 1px solid #B8D9B8;
+  border-radius: 12px;
+  padding: 3px 10px;
+}
+
+.history-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── Back ── */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.back-btn:active { background: var(--active); }
+
+.page { display: none; }
+.page.active { display: block; }
 </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
   <div class="header-left">
     <span>📅</span>
-    <span id="dateStr">今日</span>
+    <div class="date-nav">
+      <button class="nav-btn" id="prevDay">‹</button>
+      <span class="current-date" id="dateStr">今日</span>
+      <button class="nav-btn" id="nextDay">›</button>
+    </div>
   </div>
-  <div class="header-right">
+  <div class="header-right" id="coinArea">
     <span class="coin-icon">🪙</span>
     <span id="coinCount">0</span>
   </div>
 </div>
 
-<div class="progress-text" id="progressText">完成 0 / 0</div>
+<!-- Tab -->
+<div class="tab-bar">
+  <button class="tab active" id="tabToday" onclick="showPage('today')">今日打卡</button>
+  <button class="tab" id="tabHistory" onclick="showPage('history')">历史记录</button>
+</div>
 
-<div class="timeline" id="timeline"></div>
+<!-- Today Page -->
+<div class="page active" id="pageToday">
+  <div class="progress-text" id="progressText">完成 0 / 0</div>
+  <div class="timeline" id="timeline"></div>
+  <div class="all-done" id="allDone" style="display:none">
+    <div class="all-done-emoji">🎉</div>
+    <div>今日全部完成！</div>
+    <button class="reset-btn" id="resetBtn">重置今日</button>
+  </div>
+</div>
 
-<div class="all-done" id="allDone" style="display:none">
-  <div class="all-done-emoji">🎉</div>
-  <div>今日全部完成！</div>
-  <button class="reset-btn" id="resetBtn">重置今日</button>
+<!-- History Page -->
+<div class="page" id="pageHistory">
+  <button class="back-btn" onclick="showPage('today')">← 返回今日</button>
+  <div class="history-list" id="historyList"></div>
 </div>
 
 <script>
-// ── 每日时间表 ──
+// ── 每日时间表（时间范围）──
 const DEFAULT_SCHEDULE = [
-  { time: "06:00", label: "游泳" },
-  { time: "08:30", label: "聚焦工作" },
-  { time: "12:30", label: "钢琴" },
-  { time: "13:20", label: "午休" },
-  { time: "14:10", label: "聚焦工作" },
-  { time: "18:00", label: "晚饭、工作复盘" },
-  { time: "20:00", label: "AI 学习" },
-  { time: "21:30", label: "晚复盘" },
+  { timeStart: "06:00", timeEnd: "06:30", label: "游泳" },
+  { timeStart: "08:30", timeEnd: "11:30", label: "聚焦工作" },
+  { timeStart: "12:30", timeEnd: "13:20", label: "钢琴" },
+  { timeStart: "13:20", timeEnd: "13:50", label: "午休" },
+  { timeStart: "14:10", timeEnd: "17:30", label: "聚焦工作" },
+  { timeStart: "18:00", timeEnd: "19:00", label: "晚饭、工作复盘" },
+  { timeStart: "20:00", timeEnd: "21:00", label: "AI 学习" },
+  { timeStart: "21:30", timeEnd: "22:30", label: "晚复盘" },
 ];
 
-// ── Storage ──
-function todayKey() {
-  return `dayplan_${localStorage.getItem('dayplan_date') || todayStr()}`;
-}
-
+// ── Storage helpers ──
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function getOrCreatePlan() {
-  const storedDate = localStorage.getItem('dayplan_date');
-  const today = todayStr();
-  if (storedDate !== today) {
-    localStorage.setItem('dayplan_date', today);
-    const plan = {
-      date: today,
-      blocks: DEFAULT_SCHEDULE.map((b, i) => ({
-        id: i,
-        time: b.time,
-        label: b.label,
-        done: false,
-        doneAt: null,
-      })),
-      coinCount: parseInt(localStorage.getItem('dayplan_coinCount') || '0'),
-    };
-    localStorage.setItem(todayKey(), JSON.stringify(plan));
-    return plan;
+function fmtDate(dStr) {
+  const [y, m, day] = dStr.split('-');
+  return `${parseInt(m)}月${parseInt(day)}日`;
+}
+
+function getPlan(dateStr) {
+  const key = `dayplan_${dateStr}`;
+  const raw = localStorage.getItem(key);
+  if (raw) return JSON.parse(raw);
+  return null;
+}
+
+function savePlan(dateStr, plan) {
+  const key = `dayplan_${dateStr}`;
+  localStorage.setItem(key, JSON.stringify(plan));
+  // track in allDates
+  let dates = JSON.parse(localStorage.getItem('dayplan_allDates') || '[]');
+  if (!dates.includes(dateStr)) {
+    dates.push(dateStr);
+    dates.sort().reverse();
+    localStorage.setItem('dayplan_allDates', JSON.stringify(dates));
   }
-  const raw = localStorage.getItem(todayKey());
-  return raw ? JSON.parse(raw) : createFreshPlan();
 }
 
-function createFreshPlan() {
-  const today = todayStr();
-  const plan = {
-    date: today,
+function getOrCreatePlan(dateStr) {
+  const plan = getPlan(dateStr);
+  if (plan) return plan;
+  const newPlan = {
+    date: dateStr,
     blocks: DEFAULT_SCHEDULE.map((b, i) => ({
-      id: i, time: b.time, label: b.label, done: false, doneAt: null,
+      id: i,
+      timeStart: b.timeStart,
+      timeEnd: b.timeEnd,
+      label: b.label,
+      done: false,
+      doneAt: null,
     })),
-    coinCount: parseInt(localStorage.getItem('dayplan_coinCount') || '0'),
+    coinCount: 0,
   };
-  localStorage.setItem(todayKey(), JSON.stringify(plan));
-  return plan;
+  savePlan(dateStr, newPlan);
+  return newPlan;
 }
 
-function savePlan(plan) {
-  localStorage.setItem(todayKey(), JSON.stringify(plan));
-  localStorage.setItem('dayplan_coinCount', String(plan.coinCount));
+function getAllDates() {
+  return JSON.parse(localStorage.getItem('dayplan_allDates') || '[]');
 }
 
-// ── Render ──
-function render() {
-  const plan = getOrCreatePlan();
-  document.getElementById('dateStr').textContent = plan.date;
+// ── View State ──
+let currentDate = todayStr();
+
+function setDate(dStr) {
+  currentDate = dStr;
+  const el = document.getElementById('dateStr');
+  if (dStr === todayStr()) {
+    el.textContent = '今日';
+  } else {
+    el.textContent = fmtDate(dStr);
+  }
+  document.getElementById('prevDay').style.visibility = dStr <= '2026-05-01' ? 'hidden' : 'visible';
+  document.getElementById('nextDay').style.visibility = dStr >= todayStr() ? 'hidden' : 'visible';
+  renderToday();
+}
+
+function navDay(delta) {
+  const [y, m, d] = currentDate.split('-').map(Number);
+  const d2 = new Date(y, m-1, d + delta);
+  const newStr = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
+  if (newStr > todayStr()) return;
+  setDate(newStr);
+}
+
+document.getElementById('prevDay').addEventListener('click', () => navDay(-1));
+document.getElementById('nextDay').addEventListener('click', () => navDay(1));
+
+// ── Pages ──
+function showPage(page) {
+  document.getElementById('pageToday').classList.toggle('active', page === 'today');
+  document.getElementById('pageHistory').classList.toggle('active', page === 'history');
+  document.getElementById('tabToday').classList.toggle('active', page === 'today');
+  document.getElementById('tabHistory').classList.toggle('active', page === 'history');
+  document.getElementById('coinArea').style.visibility = page === 'today' ? 'flex' : 'hidden';
+  if (page === 'history') renderHistory();
+}
+
+// ── Render Today ──
+function renderToday() {
+  const plan = getOrCreatePlan(currentDate);
   document.getElementById('coinCount').textContent = plan.coinCount;
 
   const done = plan.blocks.filter(b => b.done).length;
   const total = plan.blocks.length;
-  document.getElementById('progressText').textContent = `完成 ${done} / ${total}`;
+  const isToday = currentDate === todayStr();
+  document.getElementById('progressText').textContent = `完成 ${done} / ${total} · ${fmtDate(currentDate)}`;
+  document.getElementById('progressText').style.visibility = isToday ? 'visible' : 'hidden';
 
   const tl = document.getElementById('timeline');
   const allDoneEl = document.getElementById('allDone');
   tl.innerHTML = '';
 
-  if (done === total) {
+  if (isToday && done === total) {
     tl.style.display = 'none';
     allDoneEl.style.display = 'block';
     return;
@@ -331,24 +533,32 @@ function render() {
   tl.style.display = 'block';
   allDoneEl.style.display = 'none';
 
-  plan.blocks.forEach((block, idx) => {
-    if (block.done) return;
-
+  plan.blocks.forEach(block => {
     const el = document.createElement('div');
-    el.className = 'block';
+    el.className = 'block' + (block.done ? ' done' : '');
     el.dataset.id = block.id;
 
-    el.innerHTML = `
-      <div class="block-node"></div>
-      <div class="block-inner">
-        <div class="block-time">${block.time}</div>
-        <div class="block-label">${block.label}</div>
-      </div>
-    `;
+    const timeRange = `${block.timeStart} – ${block.timeEnd}`;
 
-    el.querySelector('.block-inner').addEventListener('click', () => {
-      handleDone(block, el);
-    });
+    if (block.done) {
+      el.innerHTML = `
+        <div class="block-node"><div class="block-node-inner"></div></div>
+        <div class="done-badge">✓</div>
+        <div>
+          <div class="block-time-range">${timeRange}</div>
+          <div class="block-label">${block.label}</div>
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="block-node"><div class="block-node-inner"></div></div>
+        <div class="block-inner">
+          <div class="block-time-range">${timeRange}</div>
+          <div class="block-label">${block.label}</div>
+        </div>
+      `;
+      el.querySelector('.block-inner').addEventListener('click', () => handleDone(block, el));
+    }
 
     tl.appendChild(el);
   });
@@ -356,25 +566,20 @@ function render() {
 
 function handleDone(block, el) {
   if (el.classList.contains('removing')) return;
-
-  const plan = getOrCreatePlan();
+  const plan = getOrCreatePlan(currentDate);
   const found = plan.blocks.find(b => b.id === block.id);
   if (!found || found.done) return;
 
   found.done = true;
   found.doneAt = new Date().toISOString();
   plan.coinCount = (plan.coinCount || 0) + 1;
-  savePlan(plan);
+  savePlan(currentDate, plan);
 
-  // float coin
   const rect = el.getBoundingClientRect();
   showFloatCoin(rect.left + rect.width / 2, rect.top + rect.height / 2);
 
   el.classList.add('removing');
-
-  setTimeout(() => {
-    render();
-  }, 350);
+  setTimeout(() => renderToday(), 350);
 }
 
 function showFloatCoin(x, y) {
@@ -387,15 +592,51 @@ function showFloatCoin(x, y) {
   setTimeout(() => el.remove(), 900);
 }
 
-// reset
 document.getElementById('resetBtn').addEventListener('click', () => {
-  const today = todayStr();
-  const plan = createFreshPlan();
-  savePlan(plan);
-  render();
+  const plan = getOrCreatePlan(currentDate);
+  plan.blocks.forEach(b => { b.done = false; b.doneAt = null; });
+  plan.coinCount = 0;
+  savePlan(currentDate, plan);
+  renderToday();
 });
 
-render();
+// ── Render History ──
+function renderHistory() {
+  const dates = getAllDates();
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+
+  if (dates.length === 0) {
+    list.innerHTML = '<div class="history-empty">暂无打卡记录<br>完成今日打卡后会自动保存</div>';
+    return;
+  }
+
+  dates.forEach(dStr => {
+    const plan = getPlan(dStr);
+    if (!plan) return;
+    const done = plan.blocks.filter(b => b.done).length;
+    const total = plan.blocks.length;
+    const isToday = dStr === todayStr();
+
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div>
+        <div class="history-date">${isToday ? '今日' : fmtDate(dStr)}</div>
+        <div class="history-meta">${dStr} · ${done}/${total} 完成</div>
+      </div>
+      <div class="history-done-count">${done}/${total}</div>
+    `;
+    item.addEventListener('click', () => {
+      setDate(dStr);
+      showPage('today');
+    });
+    list.appendChild(item);
+  });
+}
+
+// ── Init ──
+setDate(todayStr());
 </script>
 </body>
 </html>
