@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>每日时间块消消乐</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -17,6 +17,8 @@
   --muted: #999;
   --done-bg: #F0F9F0;
   --done-border: #B8D9B8;
+  --page-pad: 16px;
+  --page-width: 75%;
 }
 
 body {
@@ -26,24 +28,25 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 16px 48px;
+  padding: 16px var(--page-pad) 48px;
 }
 
 /* ── Header ── */
 .header {
-  width: 100%;
-  max-width: 420px;
+  width: var(--page-width);
+  margin-inline: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  padding: 0 4px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
   color: var(--text);
   font-size: 14px;
 }
@@ -66,15 +69,8 @@ body {
 
 .nav-btn:active { background: var(--active); }
 
-.current-date {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  min-width: 90px;
-  text-align: center;
-}
-
 .header-right {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -85,20 +81,21 @@ body {
 
 .coin-icon { font-size: 18px; }
 
-/* ── Tab ── */
+/* ── Tab（顶栏内）── */
 .tab-bar {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 16px;
-  width: 100%;
-  max-width: 420px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .tab {
-  flex: 1;
-  padding: 8px;
+  padding: 7px 10px;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
+  white-space: nowrap;
   font-weight: 500;
   border-radius: 10px;
   cursor: pointer;
@@ -106,6 +103,9 @@ body {
   border: none;
   color: var(--muted);
   transition: all 0.15s;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab.active {
@@ -114,28 +114,78 @@ body {
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
+.trip-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  user-select: none;
+}
+
+.trip-check:has(input:disabled) {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.trip-check input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.trip-check:has(input:disabled) input {
+  cursor: default;
+}
+
+.block-period .block-time-start {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 /* ── Progress ── */
 .progress-text {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 12px;
   text-align: center;
-  max-width: 420px;
-  width: 100%;
+  width: var(--page-width);
+  margin-inline: auto;
 }
+
 
 /* ── Timeline ── */
 .timeline {
-  width: 100%;
-  max-width: 420px;
-  position: relative;
-  padding-left: 76px;
+  width: var(--page-width);
+  margin-inline: auto;
+  --time-col: 54px;
+  --axis-col: 30px;
+  --col-gap: 14px;
+  --card-col: min(272px, 54vw);
+  --axis-x: calc(var(--time-col) + var(--col-gap) + var(--axis-col) / 2);
 }
 
-.timeline::before {
+.timeline-track {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.timeline-track::before {
   content: '';
   position: absolute;
-  left: 60px;
+  left: calc(var(--axis-x) - 1px);
   top: 12px;
   bottom: 12px;
   width: 2px;
@@ -150,9 +200,31 @@ body {
 
 /* ── Block ── */
 .block {
-  position: relative;
+  display: grid;
+  width: fit-content;
+  max-width: 100%;
+  grid-template-columns: var(--time-col) var(--axis-col) var(--card-col);
+  column-gap: var(--col-gap);
+  align-items: center;
   margin-bottom: 10px;
   transition: opacity 0.25s, transform 0.25s;
+}
+
+.block-axis {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.block-time-start {
+  font-size: 11px;
+  font-family: "SF Mono", "Menlo", monospace;
+  color: var(--muted);
+  text-align: right;
+  padding-right: 6px;
+  line-height: 1.2;
 }
 
 .block.removing {
@@ -167,42 +239,47 @@ body {
 }
 
 .block.done {
-  background: var(--done-bg);
-  border: 1.5px solid var(--done-border);
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
   opacity: 0.65;
 }
 
-.block.done .block-time-range {
+.block-done-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--done-bg);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1.5px var(--done-border);
+}
+
+.block.done .block-time-start {
   color: #8BC48A;
-  text-decoration: line-through;
 }
 
 .block.done .block-label {
   color: #AAA;
+  text-decoration: line-through;
 }
 
 .done-badge {
-  font-size: 18px;
+  font-size: 14px;
+  line-height: 1;
   flex-shrink: 0;
+  color: #8BC48A;
 }
 
 .block-node {
-  position: absolute;
-  left: -22px;
-  top: 50%;
-  transform: translateY(-50%);
+  position: relative;
+  flex-shrink: 0;
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: var(--card);
   border: 2px solid var(--line);
   box-shadow: 0 0 0 3px var(--bg);
+  box-sizing: content-box;
   z-index: 1;
   transition: border-color 0.2s;
 }
@@ -219,17 +296,40 @@ body {
   background: #8BC48A;
 }
 
-.block-node.done .block-node-inner {
-  background: #8BC48A;
+.block-card-text {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.block-inner,
+.block-done-body {
+  width: 88%;
+  justify-self: center;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .block-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   background: var(--card);
   border-radius: 12px;
-  padding: 11px 14px;
+  padding: 12px 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
   cursor: pointer;
   transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.block-done-body .block-card-text {
+  align-items: center;
 }
 
 .block-inner:active {
@@ -237,17 +337,35 @@ body {
   background: var(--active);
 }
 
-.block-time-range {
-  font-size: 11px;
-  color: var(--muted);
-  font-family: "SF Mono", "Menlo", monospace;
-  margin-bottom: 2px;
+.block-inner.readonly {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.block-inner.readonly:active {
+  transform: none;
+  background: var(--card);
 }
 
 .block-label {
   font-size: 15px;
   color: var(--text);
   font-weight: 500;
+  line-height: 1.3;
+}
+
+.block-duration {
+  font-size: 11px;
+  color: #b8b4ac;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.block.done .block-duration {
+  color: #c5c5c5;
 }
 
 /* ── Float Coin ── */
@@ -294,7 +412,6 @@ body {
 /* ── History ── */
 .history-list {
   width: 100%;
-  max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -337,6 +454,16 @@ body {
   padding: 3px 10px;
 }
 
+.history-workflow {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin-left: 6px;
+}
+
 .history-empty {
   text-align: center;
   padding: 40px 20px;
@@ -361,87 +488,305 @@ body {
 
 .back-btn:active { background: var(--active); }
 
-.page { display: none; }
+.page {
+  display: none;
+  width: var(--page-width);
+  margin-inline: auto;
+}
 .page.active { display: block; }
 </style>
 </head>
 <body>
 
-<!-- Header -->
+<!-- Header：日期切换 + Tab + 金币 -->
 <div class="header">
   <div class="header-left">
-    <span>📅</span>
-    <div class="date-nav">
-      <button class="nav-btn" id="prevDay">‹</button>
-      <span class="current-date" id="dateStr">今日</span>
-      <button class="nav-btn" id="nextDay">›</button>
+    <div class="date-nav" id="dateNav">
+      <button class="nav-btn" id="prevDay" type="button" aria-label="前一天">‹</button>
+      <button class="nav-btn" id="nextDay" type="button" aria-label="后一天">›</button>
+    </div>
+    <div class="tab-bar" role="tablist" aria-label="页面切换">
+      <button class="tab active" id="tabToday" type="button" role="tab" aria-selected="true" aria-controls="pageToday" onclick="showPage('today')">今日打卡（工作日）</button>
+      <label class="trip-check" id="tripCheckLabel">
+        <input type="checkbox" id="tripCheck" aria-label="出差">
+        <span>出差</span>
+      </label>
+      <button class="tab" id="tabHistory" type="button" role="tab" aria-selected="false" aria-controls="pageHistory" onclick="showPage('history')">历史记录</button>
     </div>
   </div>
-  <div class="header-right" id="coinArea">
-    <span class="coin-icon">🪙</span>
+  <div class="header-right" id="coinArea" aria-label="累计金币">
+    <span class="coin-icon" aria-hidden="true">🪙</span>
     <span id="coinCount">0</span>
   </div>
-</div>
-
-<!-- Tab -->
-<div class="tab-bar">
-  <button class="tab active" id="tabToday" onclick="showPage('today')">今日打卡</button>
-  <button class="tab" id="tabHistory" onclick="showPage('history')">历史记录</button>
 </div>
 
 <!-- Today Page -->
 <div class="page active" id="pageToday">
   <div class="progress-text" id="progressText">完成 0 / 0</div>
-  <div class="timeline" id="timeline"></div>
+  <div class="timeline">
+    <div class="timeline-track" id="timeline"></div>
+  </div>
   <div class="all-done" id="allDone" style="display:none">
     <div class="all-done-emoji">🎉</div>
     <div>今日全部完成！</div>
-    <button class="reset-btn" id="resetBtn">重置今日</button>
+    <button class="reset-btn" id="resetBtn" type="button">重置当日</button>
   </div>
 </div>
 
 <!-- History Page -->
 <div class="page" id="pageHistory">
-  <button class="back-btn" onclick="showPage('today')">← 返回今日</button>
+  <button class="back-btn" type="button" onclick="showPage('today')">← 返回今日</button>
   <div class="history-list" id="historyList"></div>
 </div>
 
 <script>
-// ── 每日时间表（时间范围）──
-const DEFAULT_SCHEDULE = [
-  { timeStart: "06:00", timeEnd: "06:30", label: "游泳" },
+// ── 工作流日程模板 ──
+const WORKDAY_SCHEDULE = [
+  { timeStart: "06:40", timeEnd: "07:10", label: "游泳" },
   { timeStart: "08:30", timeEnd: "11:30", label: "聚焦工作" },
+  { timeStart: "11:50", timeEnd: "12:20", label: "午饭" },
   { timeStart: "12:30", timeEnd: "13:20", label: "钢琴" },
   { timeStart: "13:20", timeEnd: "13:50", label: "午休" },
-  { timeStart: "14:10", timeEnd: "17:30", label: "聚焦工作" },
-  { timeStart: "18:00", timeEnd: "19:00", label: "晚饭、工作复盘" },
-  { timeStart: "20:00", timeEnd: "21:00", label: "AI 学习" },
+  { timeStart: "14:00", timeEnd: "17:30", label: "聚焦工作" },
+  { timeStart: "18:00", timeEnd: "18:30", label: "晚饭" },
+  { timeStart: "18:30", timeEnd: "19:00", label: "工作复盘" },
+  { timeStart: "20:30", timeEnd: "21:30", label: "AI 学习" },
   { timeStart: "21:30", timeEnd: "22:30", label: "晚复盘" },
+  { timeStart: "22:40", timeEnd: "05:40", label: "睡觉" },
 ];
 
-// ── Storage helpers ──
+const TRIP_SCHEDULE = [
+  { timeStart: "06:30", timeEnd: "07:30", label: "起床、运动" },
+  { timeStart: "白天", timeEnd: null, label: "按出差流程工作", period: true },
+  { timeStart: "傍晚", timeEnd: null, label: "生活体验与打卡", period: true },
+  { timeStart: "20:00", timeEnd: "22:00", label: "学习和复盘" },
+  { timeStart: "22:30", timeEnd: "05:30", label: "就寝" },
+];
+
+const WEEKEND_SCHEDULE = [
+  { timeStart: "08:00", timeEnd: "09:00", label: "游泳 | 私教" },
+  { timeStart: "10:00", timeEnd: null, label: "出外放空 | 做饭", period: true },
+  { timeStart: "13:00", timeEnd: null, label: "午休", period: true },
+  { timeStart: "14:00", timeEnd: "16:00", label: "打卡外出 | 看电影" },
+  { timeStart: "17:00", timeEnd: "18:00", label: "打卡外出 | 钢琴" },
+  { timeStart: "22:30", timeEnd: "05:30", label: "就寝" },
+];
+
+const SCHEDULES = { workday: WORKDAY_SCHEDULE, weekend: WEEKEND_SCHEDULE, trip: TRIP_SCHEDULE };
+
+const META_KEYS = new Set(['dayplan_coinCount', 'dayplan_date', 'dayplan_allDates']);
+
+// ── Utils ──
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function safeJSONParse(raw, fallback) {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
 function todayStr() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function fmtDate(dStr) {
-  const [y, m, day] = dStr.split('-');
-  return `${parseInt(m)}月${parseInt(day)}日`;
+  const [, m, day] = dStr.split('-');
+  return `${parseInt(m, 10)}月${parseInt(day, 10)}日`;
 }
 
+function parseTimeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function blockDurationMinutes(block) {
+  if (block.period || !block.timeEnd) return 0;
+  const start = parseTimeToMinutes(block.timeStart);
+  let end = parseTimeToMinutes(block.timeEnd);
+  if (end <= start) end += 24 * 60;
+  return end - start;
+}
+
+/** 副标题时长：紧凑数字格式，如 30′、3h、3h30′；时段块无时长 */
+function formatDurationDisplay(block) {
+  if (block.period || !block.timeEnd) return '';
+  const minutes = blockDurationMinutes(block);
+  if (minutes <= 0) return '';
+  if (minutes >= 60) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (m === 0) return `${h}h`;
+    return `${h}h${m}′`;
+  }
+  return `${minutes}′`;
+}
+
+function isWeekend(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return day === 0 || day === 6;
+}
+
+function effectiveWorkflow(dateStr, trip) {
+  if (trip) return 'trip';
+  return isWeekend(dateStr) ? 'weekend' : 'workday';
+}
+
+function todayTabSuffix(dateStr) {
+  return isWeekend(dateStr) ? '周末' : '工作日';
+}
+
+function updateTodayTabLabel(dateStr) {
+  document.getElementById('tabToday').textContent = `今日打卡（${todayTabSuffix(dateStr)}）`;
+}
+
+function workflowLabel(plan) {
+  const wf = plan.workflow || 'workday';
+  if (plan.trip || wf === 'trip') return '出差';
+  if (wf === 'weekend') return '周末';
+  return '工作日';
+}
+
+function planBlockSignature(blocks) {
+  return blocks.map(b => `${b.timeStart || ''}:${b.label}`).join('|');
+}
+
+function shouldResyncPlan(plan) {
+  if (!plan.date || !Array.isArray(plan.blocks)) return true;
+  plan.blocks.forEach(b => {
+    if (!b.timeStart && b.time) b.timeStart = b.time;
+  });
+  if (plan.blocks.some(b => !b.timeStart || !b.label)) return true;
+  const trip = !!(plan.trip || plan.workflow === 'trip');
+  const targetWf = effectiveWorkflow(plan.date, trip);
+  const fresh = createDefaultPlan(plan.date, { trip });
+  if (plan.workflow !== targetWf) return true;
+  if (plan.blocks.length !== fresh.blocks.length) return true;
+  return planBlockSignature(plan.blocks) !== planBlockSignature(fresh.blocks);
+}
+
+function mergeDoneState(targetBlocks, sourceBlocks) {
+  const doneMap = new Map(
+    sourceBlocks.filter(b => b.done).map(b => [b.label, b])
+  );
+  targetBlocks.forEach(b => {
+    const old = doneMap.get(b.label);
+    if (old) {
+      b.done = true;
+      b.doneAt = old.doneAt || null;
+    }
+  });
+}
+
+function normalizePlan(plan) {
+  if (plan.trip == null) plan.trip = plan.workflow === 'trip';
+  const trip = !!plan.trip;
+
+  plan.blocks.forEach(b => {
+    if (!b.timeStart && b.time) b.timeStart = b.time;
+    if (b.period == null) {
+      b.period = !b.timeEnd && b.timeStart && !/^\d{2}:\d{2}$/.test(b.timeStart);
+    }
+  });
+
+  if (shouldResyncPlan(plan)) {
+    const prev = plan.blocks;
+    const fresh = createDefaultPlan(plan.date, { trip });
+    mergeDoneState(fresh.blocks, prev);
+    fresh.coinCount = plan.coinCount || 0;
+    return fresh;
+  }
+
+  plan.trip = trip;
+  plan.workflow = effectiveWorkflow(plan.date, trip);
+  return plan;
+}
+
+function isValidDateStr(dStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dStr);
+}
+
+function createDefaultPlan(dateStr, { trip = false } = {}) {
+  const workflow = effectiveWorkflow(dateStr, trip);
+  const schedule = SCHEDULES[workflow] || SCHEDULES.workday;
+  return {
+    date: dateStr,
+    trip: !!trip,
+    workflow,
+    blocks: schedule.map((b, i) => ({
+      id: i,
+      timeStart: b.timeStart,
+      timeEnd: b.timeEnd,
+      label: b.label,
+      period: !!b.period,
+      done: false,
+      doneAt: null,
+    })),
+    coinCount: 0,
+  };
+}
+
+// ── Storage helpers ──
 function getPlan(dateStr) {
   const key = `dayplan_${dateStr}`;
   const raw = localStorage.getItem(key);
-  if (raw) return JSON.parse(raw);
-  return null;
+  if (!raw) return null;
+  const plan = safeJSONParse(raw, null);
+  if (!plan || !Array.isArray(plan.blocks)) {
+    localStorage.removeItem(key);
+    return null;
+  }
+  if (!plan.date) plan.date = dateStr;
+  const before = JSON.stringify(plan);
+  const normalized = normalizePlan(plan);
+  if (JSON.stringify(normalized) !== before) {
+    savePlan(dateStr, normalized);
+  }
+  return normalized;
 }
 
-function savePlan(dateStr, plan) {
-  const key = `dayplan_${dateStr}`;
-  localStorage.setItem(key, JSON.stringify(plan));
-  // track in allDates
-  let dates = JSON.parse(localStorage.getItem('dayplan_allDates') || '[]');
+function getGlobalCoinCount() {
+  const raw = localStorage.getItem('dayplan_coinCount');
+  if (raw !== null) {
+    const n = parseInt(raw, 10);
+    if (!isNaN(n)) return Math.max(0, n);
+  }
+  return 0;
+}
+
+function setGlobalCoinCount(n) {
+  localStorage.setItem('dayplan_coinCount', String(Math.max(0, n)));
+}
+
+function adjustGlobalCoins(delta) {
+  setGlobalCoinCount(getGlobalCoinCount() + delta);
+}
+
+function migrateGlobalCoinsIfNeeded() {
+  if (localStorage.getItem('dayplan_coinCount') !== null) return;
+  let sum = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('dayplan_') || META_KEYS.has(k)) continue;
+    const plan = getPlan(k.slice('dayplan_'.length));
+    if (plan) sum += plan.coinCount || 0;
+  }
+  setGlobalCoinCount(sum);
+}
+
+function registerDateInHistory(dateStr) {
+  let dates = safeJSONParse(localStorage.getItem('dayplan_allDates'), []);
   if (!dates.includes(dateStr)) {
     dates.push(dateStr);
     dates.sort().reverse();
@@ -449,27 +794,45 @@ function savePlan(dateStr, plan) {
   }
 }
 
+function unregisterDateFromHistory(dateStr) {
+  let dates = safeJSONParse(localStorage.getItem('dayplan_allDates'), []);
+  dates = dates.filter(d => d !== dateStr);
+  localStorage.setItem('dayplan_allDates', JSON.stringify(dates));
+}
+
+function syncHistoryForPlan(dateStr, plan) {
+  if (plan.blocks.some(b => b.done)) {
+    registerDateInHistory(dateStr);
+  } else {
+    unregisterDateFromHistory(dateStr);
+  }
+}
+
+function savePlan(dateStr, plan) {
+  localStorage.setItem(`dayplan_${dateStr}`, JSON.stringify(plan));
+  syncHistoryForPlan(dateStr, plan);
+}
+
 function getOrCreatePlan(dateStr) {
   const plan = getPlan(dateStr);
   if (plan) return plan;
-  const newPlan = {
-    date: dateStr,
-    blocks: DEFAULT_SCHEDULE.map((b, i) => ({
-      id: i,
-      timeStart: b.timeStart,
-      timeEnd: b.timeEnd,
-      label: b.label,
-      done: false,
-      doneAt: null,
-    })),
-    coinCount: 0,
-  };
-  savePlan(dateStr, newPlan);
+  const newPlan = createDefaultPlan(dateStr, { trip: false });
+  if (dateStr === todayStr()) {
+    savePlan(dateStr, newPlan);
+  }
   return newPlan;
 }
 
 function getAllDates() {
-  return JSON.parse(localStorage.getItem('dayplan_allDates') || '[]');
+  return safeJSONParse(localStorage.getItem('dayplan_allDates'), []);
+}
+
+function reconcileHistoryDates() {
+  const dates = getAllDates().filter(dStr => {
+    const plan = getPlan(dStr);
+    return plan && plan.blocks.some(b => b.done);
+  });
+  localStorage.setItem('dayplan_allDates', JSON.stringify(dates.sort().reverse()));
 }
 
 // ── View State ──
@@ -477,21 +840,16 @@ let currentDate = todayStr();
 
 function setDate(dStr) {
   currentDate = dStr;
-  const el = document.getElementById('dateStr');
-  if (dStr === todayStr()) {
-    el.textContent = '今日';
-  } else {
-    el.textContent = fmtDate(dStr);
-  }
-  document.getElementById('prevDay').style.visibility = dStr <= '2026-05-01' ? 'hidden' : 'visible';
+  localStorage.setItem('dayplan_date', dStr);
   document.getElementById('nextDay').style.visibility = dStr >= todayStr() ? 'hidden' : 'visible';
+  updateTodayTabLabel(dStr);
   renderToday();
 }
 
 function navDay(delta) {
   const [y, m, d] = currentDate.split('-').map(Number);
-  const d2 = new Date(y, m-1, d + delta);
-  const newStr = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
+  const d2 = new Date(y, m - 1, d + delta);
+  const newStr = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}-${String(d2.getDate()).padStart(2, '0')}`;
   if (newStr > todayStr()) return;
   setDate(newStr);
 }
@@ -501,32 +859,65 @@ document.getElementById('nextDay').addEventListener('click', () => navDay(1));
 
 // ── Pages ──
 function showPage(page) {
-  document.getElementById('pageToday').classList.toggle('active', page === 'today');
+  const isTodayPage = page === 'today';
+  document.getElementById('pageToday').classList.toggle('active', isTodayPage);
   document.getElementById('pageHistory').classList.toggle('active', page === 'history');
-  document.getElementById('tabToday').classList.toggle('active', page === 'today');
+  document.getElementById('tabToday').classList.toggle('active', isTodayPage);
   document.getElementById('tabHistory').classList.toggle('active', page === 'history');
-  document.getElementById('coinArea').style.visibility = page === 'today' ? 'flex' : 'hidden';
+  document.getElementById('tabToday').setAttribute('aria-selected', String(isTodayPage));
+  document.getElementById('tabHistory').setAttribute('aria-selected', String(page === 'history'));
+  document.getElementById('coinArea').style.visibility = isTodayPage ? 'visible' : 'hidden';
+  document.getElementById('dateNav').style.visibility = isTodayPage ? 'visible' : 'hidden';
   if (page === 'history') renderHistory();
+}
+
+function updateTripCheckbox(plan) {
+  const input = document.getElementById('tripCheck');
+  const canEdit = currentDate === todayStr();
+  input.checked = !!(plan.trip || plan.workflow === 'trip');
+  input.disabled = !canEdit;
+}
+
+function setTripMode(trip) {
+  const plan = getOrCreatePlan(currentDate);
+  const wasTrip = !!(plan.trip || plan.workflow === 'trip');
+  if (wasTrip === trip) return;
+
+  const done = plan.blocks.filter(b => b.done).length;
+  if (done > 0 && !confirm('切换出差将重置当日打卡进度，是否继续？')) {
+    updateTripCheckbox(plan);
+    return;
+  }
+
+  const earned = plan.coinCount || 0;
+  if (earned > 0) adjustGlobalCoins(-earned);
+
+  const newPlan = createDefaultPlan(currentDate, { trip });
+  savePlan(currentDate, newPlan);
+  renderToday();
 }
 
 // ── Render Today ──
 function renderToday() {
   const plan = getOrCreatePlan(currentDate);
-  document.getElementById('coinCount').textContent = plan.coinCount;
+  document.getElementById('coinCount').textContent = getGlobalCoinCount();
+  updateTripCheckbox(plan);
 
   const done = plan.blocks.filter(b => b.done).length;
   const total = plan.blocks.length;
   const isToday = currentDate === todayStr();
-  document.getElementById('progressText').textContent = `完成 ${done} / ${total} · ${fmtDate(currentDate)}`;
-  document.getElementById('progressText').style.visibility = isToday ? 'visible' : 'hidden';
+  const wfTag = workflowLabel(plan);
+  document.getElementById('progressText').textContent =
+    `完成 ${done} / ${total} · ${fmtDate(currentDate)} · ${wfTag}`;
 
   const tl = document.getElementById('timeline');
   const allDoneEl = document.getElementById('allDone');
   tl.innerHTML = '';
 
-  if (isToday && done === total) {
+  if (done === total) {
     tl.style.display = 'none';
     allDoneEl.style.display = 'block';
+    document.getElementById('resetBtn').textContent = isToday ? '重置今日' : '重置当日';
     return;
   }
 
@@ -535,29 +926,43 @@ function renderToday() {
 
   plan.blocks.forEach(block => {
     const el = document.createElement('div');
-    el.className = 'block' + (block.done ? ' done' : '');
+    el.className = 'block' + (block.done ? ' done' : '') + (block.period ? ' block-period' : '');
     el.dataset.id = block.id;
 
-    const timeRange = `${block.timeStart} – ${block.timeEnd}`;
+    const startTime = escapeHtml(block.timeStart);
+    const label = escapeHtml(block.label);
+    const durationText = formatDurationDisplay(block);
+    const durationHtml = durationText
+      ? `<span class="block-duration">${escapeHtml(durationText)}</span>`
+      : '';
 
     if (block.done) {
       el.innerHTML = `
-        <div class="block-node"><div class="block-node-inner"></div></div>
-        <div class="done-badge">✓</div>
-        <div>
-          <div class="block-time-range">${timeRange}</div>
-          <div class="block-label">${block.label}</div>
+        <div class="block-time-start">${startTime}</div>
+        <div class="block-axis"><div class="block-node"><div class="block-node-inner"></div></div></div>
+        <div class="block-done-body">
+          <div class="block-card-text">
+            <span class="done-badge" aria-hidden="true">✓</span>
+            <span class="block-label">${label}</span>
+            ${durationHtml}
+          </div>
         </div>
       `;
     } else {
+      const readonly = isToday ? '' : ' readonly';
       el.innerHTML = `
-        <div class="block-node"><div class="block-node-inner"></div></div>
-        <div class="block-inner">
-          <div class="block-time-range">${timeRange}</div>
-          <div class="block-label">${block.label}</div>
+        <div class="block-time-start">${startTime}</div>
+        <div class="block-axis"><div class="block-node"><div class="block-node-inner"></div></div></div>
+        <div class="block-inner${readonly}">
+          <div class="block-card-text">
+            <span class="block-label">${label}</span>
+            ${durationHtml}
+          </div>
         </div>
       `;
-      el.querySelector('.block-inner').addEventListener('click', () => handleDone(block, el));
+      if (isToday) {
+        el.querySelector('.block-inner').addEventListener('click', () => handleDone(block, el));
+      }
     }
 
     tl.appendChild(el);
@@ -565,6 +970,7 @@ function renderToday() {
 }
 
 function handleDone(block, el) {
+  if (currentDate !== todayStr()) return;
   if (el.classList.contains('removing')) return;
   const plan = getOrCreatePlan(currentDate);
   const found = plan.blocks.find(b => b.id === block.id);
@@ -573,6 +979,7 @@ function handleDone(block, el) {
   found.done = true;
   found.doneAt = new Date().toISOString();
   plan.coinCount = (plan.coinCount || 0) + 1;
+  adjustGlobalCoins(1);
   savePlan(currentDate, plan);
 
   const rect = el.getBoundingClientRect();
@@ -586,6 +993,7 @@ function showFloatCoin(x, y) {
   const el = document.createElement('div');
   el.className = 'float-coin';
   el.textContent = '+1 🪙';
+  el.setAttribute('aria-hidden', 'true');
   el.style.left = `${x - 20}px`;
   el.style.top = `${y}px`;
   document.body.appendChild(el);
@@ -594,10 +1002,16 @@ function showFloatCoin(x, y) {
 
 document.getElementById('resetBtn').addEventListener('click', () => {
   const plan = getOrCreatePlan(currentDate);
-  plan.blocks.forEach(b => { b.done = false; b.doneAt = null; });
-  plan.coinCount = 0;
-  savePlan(currentDate, plan);
+  const earned = plan.coinCount || 0;
+  if (earned > 0) adjustGlobalCoins(-earned);
+  const trip = !!(plan.trip || plan.workflow === 'trip');
+  const fresh = createDefaultPlan(currentDate, { trip });
+  savePlan(currentDate, fresh);
   renderToday();
+});
+
+document.getElementById('tripCheck').addEventListener('change', (e) => {
+  setTripMode(e.target.checked);
 });
 
 // ── Render History ──
@@ -617,26 +1031,50 @@ function renderHistory() {
     const done = plan.blocks.filter(b => b.done).length;
     const total = plan.blocks.length;
     const isToday = dStr === todayStr();
+    const wf = workflowLabel(plan);
 
     const item = document.createElement('div');
     item.className = 'history-item';
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
     item.innerHTML = `
       <div>
-        <div class="history-date">${isToday ? '今日' : fmtDate(dStr)}</div>
-        <div class="history-meta">${dStr} · ${done}/${total} 完成</div>
+        <div class="history-date">${escapeHtml(isToday ? '今日' : fmtDate(dStr))}
+          <span class="history-workflow">${escapeHtml(wf)}</span>
+        </div>
+        <div class="history-meta">${escapeHtml(dStr)} · ${done}/${total} 完成</div>
       </div>
       <div class="history-done-count">${done}/${total}</div>
     `;
-    item.addEventListener('click', () => {
+    const openDay = () => {
       setDate(dStr);
       showPage('today');
+    };
+    item.addEventListener('click', openDay);
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDay();
+      }
     });
     list.appendChild(item);
   });
 }
 
 // ── Init ──
-setDate(todayStr());
+function initApp() {
+  migrateGlobalCoinsIfNeeded();
+  reconcileHistoryDates();
+  const saved = localStorage.getItem('dayplan_date');
+  const today = todayStr();
+  let initial = today;
+  if (saved && isValidDateStr(saved) && saved <= today) {
+    initial = saved;
+  }
+  setDate(initial);
+}
+
+initApp();
 </script>
 </body>
 </html>
