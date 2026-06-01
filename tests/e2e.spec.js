@@ -26,15 +26,15 @@ test.beforeEach(async ({ page }) => {
   await page.goto(PAGE_URL);
 });
 
-test('金币区在今日页可见、历史页隐藏', async ({ page }) => {
-  const coinArea = page.locator('#coinArea');
-  await expect(coinArea).toHaveCSS('visibility', 'visible');
+test('状态栏在今日页可见、历史页隐藏', async ({ page }) => {
+  const statusBar = page.locator('#statusBar');
+  await expect(statusBar).toBeVisible();
 
   await page.getByRole('tab', { name: '历史记录' }).click();
-  await expect(coinArea).toHaveCSS('visibility', 'hidden');
+  await expect(statusBar).toBeHidden();
 
-  await page.getByRole('tab', { name: /今日打卡/ }).click();
-  await expect(coinArea).toHaveCSS('visibility', 'visible');
+  await page.getByRole('tab', { name: /今日打卡|今日·/ }).click();
+  await expect(statusBar).toBeVisible();
 });
 
 test('仅浏览昨日不会写入历史记录', async ({ page }) => {
@@ -120,7 +120,20 @@ test('Tab 文案随工作日或周末变化', async ({ page }) => {
     const day = d.getDay();
     return day === 0 || day === 6 ? '周末' : '工作日';
   });
-  await expect(page.locator('#tabToday')).toHaveText(`今日打卡（${suffix}）`);
+  await expect(page.locator('#tabToday .tab-text--long')).toHaveText(`今日打卡（${suffix}）`);
+  await expect(page.locator('#tabToday .tab-text--short')).toHaveText(`今日·${suffix}`);
+});
+
+test('手机窄屏顶栏 Tab 完整可见', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.reload();
+  await expect(page.locator('#tabToday .tab-text--short')).toBeVisible();
+  await expect(page.locator('#tabHistory .tab-text--short')).toHaveText('历史');
+  await expect(page.locator('.trip-check')).toBeVisible();
+  const todayShort = await page.locator('#tabToday .tab-text--short').boundingBox();
+  expect(todayShort.width).toBeGreaterThan(50);
+  await expect(page.locator('#statusBar')).toBeVisible();
+  await expect(page.locator('#progressText .progress-text--short')).toBeVisible();
 });
 
 test('勾选出差后切换为出差日程', async ({ page }) => {
@@ -128,7 +141,7 @@ test('勾选出差后切换为出差日程', async ({ page }) => {
   await page.getByLabel('出差').check();
   await expect(page.locator('#timeline .block')).toHaveCount(5);
   await expect(page.locator('.block-label').first()).toHaveText('起床、运动');
-  await expect(page.locator('#progressText')).toContainText('出差');
+  await expect(page.locator('#progressText .progress-text--long')).toContainText('出差');
 });
 
 test('全部完成后显示庆祝页并可重置', async ({ page }) => {
