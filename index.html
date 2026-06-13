@@ -634,7 +634,7 @@ const TRIP_SCHEDULE = [
   { timeStart: "22:30", timeEnd: "05:30", label: "就寝" },
 ];
 
-const WEEKEND_SCHEDULE = [
+const WEEKEND_TEMPLATE = [
   { timeStart: "08:00", timeEnd: "09:00", label: "游泳 | 私教" },
   { timeStart: "10:00", timeEnd: null, label: "出外放空 | 做饭", period: true },
   { timeStart: "13:00", timeEnd: null, label: "午休", period: true },
@@ -643,7 +643,31 @@ const WEEKEND_SCHEDULE = [
   { timeStart: "22:30", timeEnd: "05:30", label: "就寝" },
 ];
 
-const SCHEDULES = { workday: WORKDAY_SCHEDULE, weekend: WEEKEND_SCHEDULE, trip: TRIP_SCHEDULE };
+/** 按 | / ｜ 拆分：前半为周六，后半为周日；无分隔符则两天相同 */
+function weekendLabelForDay(label, day) {
+  const parts = label.split(/[|｜/]/).map(s => s.trim()).filter(Boolean);
+  if (parts.length < 2) return label.trim();
+  return day === 'saturday' ? parts[0] : parts[1];
+}
+
+function buildWeekendSchedule(day) {
+  return WEEKEND_TEMPLATE.map(b => ({
+    timeStart: b.timeStart,
+    timeEnd: b.timeEnd,
+    label: weekendLabelForDay(b.label, day),
+    period: !!b.period,
+  }));
+}
+
+const SATURDAY_SCHEDULE = buildWeekendSchedule('saturday');
+const SUNDAY_SCHEDULE = buildWeekendSchedule('sunday');
+
+const SCHEDULES = {
+  workday: WORKDAY_SCHEDULE,
+  saturday: SATURDAY_SCHEDULE,
+  sunday: SUNDAY_SCHEDULE,
+  trip: TRIP_SCHEDULE,
+};
 
 const META_KEYS = new Set(['dayplan_coinCount', 'dayplan_date', 'dayplan_allDates']);
 
@@ -703,19 +727,24 @@ function formatDurationDisplay(block) {
   return `${minutes}′`;
 }
 
-function isWeekend(dateStr) {
+function dayOfWeek(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const day = new Date(y, m - 1, d).getDay();
-  return day === 0 || day === 6;
+  return new Date(y, m - 1, d).getDay();
 }
 
 function effectiveWorkflow(dateStr, trip) {
   if (trip) return 'trip';
-  return isWeekend(dateStr) ? 'weekend' : 'workday';
+  const dow = dayOfWeek(dateStr);
+  if (dow === 6) return 'saturday';
+  if (dow === 0) return 'sunday';
+  return 'workday';
 }
 
 function todayTabSuffix(dateStr) {
-  return isWeekend(dateStr) ? '周末' : '工作日';
+  const wf = effectiveWorkflow(dateStr, false);
+  if (wf === 'saturday') return '周六';
+  if (wf === 'sunday') return '周日';
+  return '工作日';
 }
 
 function updateTodayTabLabel(dateStr) {
@@ -729,7 +758,8 @@ function updateTodayTabLabel(dateStr) {
 function workflowLabel(plan) {
   const wf = plan.workflow || 'workday';
   if (plan.trip || wf === 'trip') return '出差';
-  if (wf === 'weekend') return '周末';
+  if (wf === 'saturday') return '周六';
+  if (wf === 'sunday') return '周日';
   return '工作日';
 }
 
@@ -752,9 +782,13 @@ function shouldResyncPlan(plan) {
 }
 
 function mergeDoneState(targetBlocks, sourceBlocks) {
-  const doneMap = new Map(
-    sourceBlocks.filter(b => b.done).map(b => [b.label, b])
-  );
+  const doneMap = new Map();
+  sourceBlocks.filter(b => b.done).forEach(b => {
+    doneMap.set(b.label, b);
+    b.label.split(/[|｜/]/).map(s => s.trim()).filter(Boolean).forEach(part => {
+      if (!doneMap.has(part)) doneMap.set(part, b);
+    });
+  });
   targetBlocks.forEach(b => {
     const old = doneMap.get(b.label);
     if (old) {
