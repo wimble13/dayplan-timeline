@@ -76,6 +76,53 @@ body {
 
 .nav-btn:active { background: var(--active); }
 
+.clear-day-btn,
+.delete-day-btn,
+.finish-edit-btn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.delete-day-btn { color: #c45c5c; }
+
+.clear-day-btn:active,
+.delete-day-btn:active,
+.finish-edit-btn:active { background: var(--active); }
+
+.block-inner.editing {
+  position: relative;
+  padding-right: 34px;
+}
+
+.block-remove {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #f5ebe8;
+  color: #c45c5c;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.block-remove:active { background: #ecd5d0; }
+
+.edit-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
 .header-right {
   flex-shrink: 0;
   display: flex;
@@ -424,6 +471,11 @@ body {
   cursor: pointer;
 }
 
+.reset-btn.danger {
+  color: #c45c5c;
+  border-color: #e8c4c4;
+}
+
 /* ── History ── */
 .history-list {
   width: 100%;
@@ -580,6 +632,8 @@ body {
     <div class="date-nav" id="dateNav">
       <button class="nav-btn" id="prevDay" type="button" aria-label="前一天">‹</button>
       <button class="nav-btn" id="nextDay" type="button" aria-label="后一天">›</button>
+      <button class="nav-btn delete-day-btn" id="deleteDayBtn" type="button" style="display:none" aria-label="删除该日记录">删除</button>
+      <button class="nav-btn finish-edit-btn" id="finishEditBtn" type="button" style="display:none" aria-label="完成编辑">完成编辑</button>
     </div>
     <div class="progress-text" id="progressText" aria-live="polite">
       <span class="progress-text--long">完成 0 / 0</span>
@@ -594,6 +648,7 @@ body {
 
 <!-- Today Page -->
 <div class="page active" id="pageToday">
+  <div class="edit-hint" id="editHint" style="display:none">重置后可点击 × 移除不需要的时间块</div>
   <div class="timeline">
     <div class="timeline-track" id="timeline"></div>
   </div>
@@ -768,6 +823,7 @@ function planBlockSignature(blocks) {
 }
 
 function shouldResyncPlan(plan) {
+  if (plan.customized) return false;
   if (!plan.date || !Array.isArray(plan.blocks)) return true;
   plan.blocks.forEach(b => {
     if (!b.timeStart && b.time) b.timeStart = b.time;
@@ -814,8 +870,13 @@ function normalizePlan(plan) {
     const fresh = createDefaultPlan(plan.date, { trip });
     mergeDoneState(fresh.blocks, prev);
     fresh.coinCount = plan.coinCount || 0;
+    fresh.editMode = !!plan.editMode;
+    fresh.customized = !!plan.customized;
     return fresh;
   }
+
+  if (plan.customized == null) plan.customized = false;
+  if (plan.editMode == null) plan.editMode = false;
 
   plan.trip = trip;
   plan.workflow = effectiveWorkflow(plan.date, trip);
@@ -833,6 +894,8 @@ function createDefaultPlan(dateStr, { trip = false } = {}) {
     date: dateStr,
     trip: !!trip,
     workflow,
+    customized: false,
+    editMode: false,
     blocks: schedule.map((b, i) => ({
       id: i,
       timeStart: b.timeStart,
@@ -920,6 +983,35 @@ function syncHistoryForPlan(dateStr, plan) {
 function savePlan(dateStr, plan) {
   localStorage.setItem(`dayplan_${dateStr}`, JSON.stringify(plan));
   syncHistoryForPlan(dateStr, plan);
+}
+
+function deletePlan(dateStr) {
+  localStorage.removeItem(`dayplan_${dateStr}`);
+  unregisterDateFromHistory(dateStr);
+}
+
+/** 仅今日：清空打卡进度并进入编辑模式，可移除单项 */
+function resetPlan(dateStr) {
+  if (dateStr !== todayStr()) return;
+  const plan = getOrCreatePlan(dateStr);
+  const earned = plan.coinCount || 0;
+  if (earned > 0) adjustGlobalCoins(-earned);
+  const trip = !!(plan.trip || plan.workflow === 'trip');
+  const fresh = createDefaultPlan(dateStr, { trip });
+  fresh.editMode = true;
+  savePlan(dateStr, fresh);
+}
+
+/** 历史日期：删除该日全部记录，返回是否已删除 */
+function deleteDay(dateStr) {
+  if (dateStr === todayStr()) return false;
+  if (!confirm('删除后将移除该日所有打卡记录，是否继续？')) return false;
+  const plan = getOrCreatePlan(dateStr);
+  const earned = plan.coinCount || 0;
+  if (earned > 0) adjustGlobalCoins(-earned);
+  deletePlan(dateStr);
+  if (currentDate === dateStr) setDate(todayStr());
+  return true;
 }
 
 function getOrCreatePlan(dateStr) {
@@ -1026,6 +1118,13 @@ function renderToday() {
   const wfTag = workflowLabel(plan);
   updateProgressDisplay(done, total, currentDate, wfTag);
 
+  const clearBtn = document.getElementById('deleteDayBtn');
+  const finishEditBtn = document.getElementById('finishEditBtn');
+  const editHint = document.getElementById('editHint');
+  clearBtn.style.display = !isToday && done > 0 ? '' : 'none';
+  finishEditBtn.style.display = isToday && plan.editMode ? '' : 'none';
+  editHint.style.display = isToday && plan.editMode ? 'block' : 'none';
+
   const tl = document.getElementById('timeline');
   const allDoneEl = document.getElementById('allDone');
   tl.innerHTML = '';
@@ -1033,12 +1132,28 @@ function renderToday() {
   if (done === total) {
     tl.style.display = 'none';
     allDoneEl.style.display = 'block';
-    document.getElementById('resetBtn').textContent = isToday ? '重置今日' : '重置当日';
+    clearBtn.style.display = 'none';
+    finishEditBtn.style.display = 'none';
+    editHint.style.display = 'none';
+    allDoneEl.querySelector('div:nth-child(2)').textContent = isToday ? '今日全部完成！' : '该日全部完成！';
+    const resetBtn = document.getElementById('resetBtn');
+    resetBtn.textContent = isToday ? '重置今日' : '删除当日';
+    resetBtn.classList.toggle('danger', !isToday);
+    resetBtn.setAttribute('aria-label', isToday ? '重置今日' : '删除当日');
     return;
   }
 
+  document.getElementById('resetBtn').classList.remove('danger');
+
   tl.style.display = 'block';
   allDoneEl.style.display = 'none';
+
+  if (plan.blocks.length === 0) {
+    tl.innerHTML = '<div class="all-done"><div class="all-done-emoji">📭</div><div>今日时间块已全部移除</div></div>';
+    return;
+  }
+
+  const editing = isToday && !!plan.editMode;
 
   plan.blocks.forEach(block => {
     const el = document.createElement('div');
@@ -1066,18 +1181,34 @@ function renderToday() {
       `;
     } else {
       const readonly = isToday ? '' : ' readonly';
+      const editingClass = editing ? ' editing' : '';
+      const removeBtn = editing
+        ? '<button class="block-remove" type="button" aria-label="移除">×</button>'
+        : '';
       el.innerHTML = `
         <div class="block-time-start">${startTime}</div>
         <div class="block-axis"><div class="block-node"><div class="block-node-inner"></div></div></div>
-        <div class="block-inner${readonly}">
+        <div class="block-inner${readonly}${editingClass}">
           <div class="block-card-text">
             <span class="block-label">${label}</span>
             ${durationHtml}
           </div>
+          ${removeBtn}
         </div>
       `;
+      const inner = el.querySelector('.block-inner');
       if (isToday) {
-        el.querySelector('.block-inner').addEventListener('click', () => handleDone(block, el));
+        inner.addEventListener('click', (e) => {
+          if (e.target.closest('.block-remove')) return;
+          handleDone(block, el);
+        });
+      }
+      const removeEl = el.querySelector('.block-remove');
+      if (removeEl) {
+        removeEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleRemoveBlock(block, el);
+        });
       }
     }
 
@@ -1105,6 +1236,26 @@ function handleDone(block, el) {
   setTimeout(() => renderToday(), 350);
 }
 
+function handleRemoveBlock(block, el) {
+  if (currentDate !== todayStr()) return;
+  const plan = getOrCreatePlan(currentDate);
+  if (!plan.editMode) return;
+  plan.blocks = plan.blocks.filter(b => b.id !== block.id);
+  plan.blocks.forEach((b, i) => { b.id = i; });
+  plan.customized = true;
+  savePlan(currentDate, plan);
+  el.classList.add('removing');
+  setTimeout(() => renderToday(), 350);
+}
+
+function finishEditMode() {
+  const plan = getOrCreatePlan(currentDate);
+  if (!plan.editMode) return;
+  plan.editMode = false;
+  savePlan(currentDate, plan);
+  renderToday();
+}
+
 function showFloatCoin(x, y) {
   const el = document.createElement('div');
   el.className = 'float-coin';
@@ -1117,13 +1268,20 @@ function showFloatCoin(x, y) {
 }
 
 document.getElementById('resetBtn').addEventListener('click', () => {
-  const plan = getOrCreatePlan(currentDate);
-  const earned = plan.coinCount || 0;
-  if (earned > 0) adjustGlobalCoins(-earned);
-  const trip = !!(plan.trip || plan.workflow === 'trip');
-  const fresh = createDefaultPlan(currentDate, { trip });
-  savePlan(currentDate, fresh);
-  renderToday();
+  if (currentDate === todayStr()) {
+    resetPlan(currentDate);
+    renderToday();
+  } else {
+    deleteDay(currentDate);
+  }
+});
+
+document.getElementById('deleteDayBtn').addEventListener('click', () => {
+  deleteDay(currentDate);
+});
+
+document.getElementById('finishEditBtn').addEventListener('click', () => {
+  finishEditMode();
 });
 
 document.getElementById('tripCheck').addEventListener('change', (e) => {
@@ -1132,7 +1290,12 @@ document.getElementById('tripCheck').addEventListener('change', (e) => {
 
 // ── Render History ──
 function renderHistory() {
-  const dates = getAllDates();
+  const dates = getAllDates().filter(dStr => {
+    const plan = getPlan(dStr);
+    const hasDone = plan && plan.blocks.some(b => b.done);
+    if (!hasDone) unregisterDateFromHistory(dStr);
+    return hasDone;
+  });
   const list = document.getElementById('historyList');
   list.innerHTML = '';
 
@@ -1143,8 +1306,15 @@ function renderHistory() {
 
   dates.forEach(dStr => {
     const plan = getPlan(dStr);
-    if (!plan) return;
+    if (!plan) {
+      unregisterDateFromHistory(dStr);
+      return;
+    }
     const done = plan.blocks.filter(b => b.done).length;
+    if (done === 0) {
+      unregisterDateFromHistory(dStr);
+      return;
+    }
     const total = plan.blocks.length;
     const isToday = dStr === todayStr();
     const wf = workflowLabel(plan);
